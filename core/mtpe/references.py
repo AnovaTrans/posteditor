@@ -59,6 +59,8 @@ def load_tm(data: bytes) -> TM:
         root = etree.fromstring(text.encode("utf-8"), etree.XMLParser(recover=True, huge_tree=True))
     except Exception:
         return TM()
+    if root is None:                       # recover=True can yield None on bad input
+        return TM()
     pairs = []
     for tu in root.iter():
         if _local(tu.tag) != "tu":
@@ -125,6 +127,8 @@ def _load_tbx(data: bytes) -> TB:
         root = etree.fromstring(_to_text(data).encode("utf-8"),
                                 etree.XMLParser(recover=True, huge_tree=True))
     except Exception:
+        return TB()
+    if root is None:
         return TB()
     pairs = []
     for entry in root.iter():

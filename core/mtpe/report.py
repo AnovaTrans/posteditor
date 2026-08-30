@@ -25,32 +25,32 @@ def report_json(stats: dict, score: dict, findings) -> bytes:
 
 
 def report_md(stats: dict, score: dict, findings) -> bytes:
-    L = [f"# LQA Raporu — {stats.get('file_name', '')}", ""]
+    L = [f"# LQA Report — {stats.get('file_name', '')}", ""]
     L += [
-        "## Özet", "",
-        "| Metrik | Değer |", "|---|---|",
+        "## Summary", "",
+        "| Metric | Value |", "|---|---|",
         f"| Format | {stats.get('format', '')} |",
-        f"| Dil | {stats.get('source_lang', '')} → {stats.get('target_lang', '')} |",
-        f"| Toplam segment | {stats.get('total', 0)} |",
-        f"| İncelenen segment | {stats.get('reviewable', 0)} |",
-        f"| Kelime | {score.get('words', 0)} |",
-        f"| LQA skoru (1000 kelime) | **{score.get('lqa_score', 0)}** |",
-        f"| Kalite derecesi | **{score.get('grade', '')}** |",
-        f"| Kritik / Major / Minor | {score.get('critical',0)} / {score.get('major',0)} / {score.get('minor',0)} |",
-        f"| Flaglenen segment | {score.get('flagged_segments', 0)} |",
+        f"| Languages | {stats.get('source_lang', '')} → {stats.get('target_lang', '')} |",
+        f"| Total segments | {stats.get('total', 0)} |",
+        f"| Reviewed segments | {stats.get('reviewable', 0)} |",
+        f"| Words | {score.get('words', 0)} |",
+        f"| LQA score (per 1000 words) | **{score.get('lqa_score', 0)}** |",
+        f"| Quality grade | **{score.get('grade', '')}** |",
+        f"| Critical / Major / Minor | {score.get('critical',0)} / {score.get('major',0)} / {score.get('minor',0)} |",
+        f"| Flagged segments | {score.get('flagged_segments', 0)} |",
         "",
     ]
     by_cat = score.get("by_category", {})
     if by_cat:
-        L += ["## Kategori dağılımı", "", "| Kategori | Adet |", "|---|---|"]
+        L += ["## By category", "", "| Category | Count |", "|---|---|"]
         L += [f"| {k} | {v} |" for k, v in sorted(by_cat.items(), key=lambda x: -x[1])]
         L.append("")
-    L += ["## Bulgular", ""]
+    L += ["## Findings", ""]
     cur = None
     for f in findings:
         if f.segment_id != cur:
             cur = f.segment_id
-            L += ["", f"### Segment {f.segment_id}", f"**Kaynak:** {f.source}", f"**Hedef:** {f.target}", ""]
+            L += ["", f"### Segment {f.segment_id}", f"**Source:** {f.source}", f"**Target:** {f.target}", ""]
         L.append(f"- **[{f.severity}] {f.layer}/{f.category}** — {f.message}"
-                 + (f"  \n  _Öneri:_ {f.suggestion}" if f.suggestion else ""))
+                 + (f"  \n  _Suggestion:_ {f.suggestion}" if f.suggestion else ""))
     return "\n".join(L).encode("utf-8")

@@ -36,8 +36,9 @@ Severity: critical (meaning-inverting, safety/legal, wrong translation) | \
 major (seriously hurts readability, banned terminology, big grammar error) | \
 minor (spelling, punctuation, small fluency/style).
 
-Return ONLY JSON, no prose:
-{"segments":[{"id":"<id>","corrected":"<improved target>","errors":[{"category":"fluency","code":"L-MT","severity":"minor","message":"<short reason in the target language>"}]}]}
+Return ONLY JSON, no prose. Write every "message" in English regardless of the
+target language:
+{"segments":[{"id":"<id>","corrected":"<improved target>","errors":[{"category":"fluency","code":"grammar","severity":"minor","message":"<short reason in English>"}]}]}
 If a segment has no error, return its "errors" as [] and "corrected" equal to the target."""
 
 

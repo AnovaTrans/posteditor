@@ -16,7 +16,6 @@ from core.mtpe.findings import Finding
 class AnalyzeOptions:
     target_lang: str = ""
     instructions: str = ""
-    turkish: bool = False          # enable Turkish MT/terminology pattern pack
     use_llm: bool = True
     workers: int = 6
 
@@ -54,7 +53,7 @@ def analyze(doc, options: AnalyzeOptions, *, llm=None, tm=None, tb=None, dnt=Non
     segments = doc.segments
 
     findings: list[Finding] = []
-    findings += rules.run(segments, turkish=options.turkish)
+    findings += rules.run(segments)
     findings += refcheck.run(segments, tm=tm, tb=tb, dnt=dnt)
 
     llm_map: dict = {}

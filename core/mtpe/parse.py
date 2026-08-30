@@ -75,6 +75,8 @@ class XliffDoc:
         self.filename = filename
         # recover=True: real-world CAT files are occasionally slightly malformed
         self._tree = etree.fromstring(data, etree.XMLParser(recover=True, huge_tree=True))
+        if self._tree is None:
+            raise ValueError("Could not parse the file as XLIFF — it may be empty or not a bilingual XML file.")
         self.fmt = self._detect()
         self.source_lang, self.target_lang = self._langs()
         self.segments: list[Segment] = []

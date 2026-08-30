@@ -33,7 +33,7 @@ def tm_findings(segments, tm):
         if sim < TM_DIVERGE_MAX:
             sev = MAJOR if score >= 99 else MINOR
             out.append(_f(seg, "tm", "tm_divergence", sev,
-                          f"TM (%{score} eşleşme) farklı bir hedef veriyor.", "tm", tm_target))
+                          f"TM ({score}% match) suggests a different target.", "tm", tm_target))
     return out
 
 
@@ -49,7 +49,7 @@ def tb_findings(segments, tb):
         for src_term, tgt_term in tb.hits(seg.source):
             if tgt_term.lower() not in low_tgt:
                 out.append(_f(seg, "tb", "termbase", MAJOR,
-                              f"Terim eksik: '{src_term}' → '{tgt_term}' bekleniyor.", "tb",
+                              f"Termbase: '{src_term}' should be translated as '{tgt_term}'.", "tb",
                               tgt_term))
     return out
 
@@ -66,7 +66,7 @@ def dnt_findings(segments, dnt):
             if re.search(rf"(?<!\w){re.escape(term)}(?!\w)", seg.source) and \
                not re.search(rf"(?<!\w){re.escape(term)}(?!\w)", seg.target):
                 out.append(_f(seg, "dnt", "dnt_violation", MAJOR,
-                              f"DNT terimi hedefte aynen yok: '{term}'.", "dnt", term))
+                              f"Do-Not-Translate term is missing/altered in the target: '{term}'.", "dnt", term))
     return out
 
 

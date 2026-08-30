@@ -30,12 +30,15 @@ pip install pytest
 PYTHONPATH=. pytest -q
 ```
 
+The UI is English and the checks are **language-agnostic** — the tool works for
+any target language. Language- and locale-specific judgements are left to the LLM
+layer, which is told the target language.
+
 ## Layers
 | Layer | Cost | What it checks |
 |---|---|---|
-| rules | free | numbers, placeholders, tags, spacing, %-position, decimal comma, punctuation, repetition, length, TR MT-isms |
+| rules | free | numbers, placeholders, tags, spacing, punctuation parity, repetition, length, untranslated, inconsistency |
 | refcheck | free | TM divergence, termbase enforcement, DNT integrity |
 | LLM (6-layer) | Claude | accuracy · fluency · terminology · style · compliance · hallucination + a proposed corrected target |
 
-Phase 2 (planned): style-guide adherence, semantic reference (API embeddings),
-Turkish spelling deep-dive.
+Phase 2 (planned): style-guide adherence, semantic reference (API embeddings).
