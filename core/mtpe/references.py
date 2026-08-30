@@ -147,15 +147,25 @@ def _load_tbx(data: bytes) -> TB:
 
 
 # -------------------------------------------------------------------------- DNT
-def load_dnt(data: bytes) -> list:
-    """Do-Not-Translate terms: one per line, or first column of a CSV."""
+def _load_term_list(data: bytes, headers: tuple) -> list:
+    """One term per line, or first column of a CSV; drops a header row."""
     text = _to_text(data)
     out = []
     for line in text.splitlines():
         term = line.split(",")[0].split(";")[0].strip().strip('"')
-        if term and term.lower() not in ("term", "dnt", "do not translate"):
+        if term and term.lower() not in headers:
             out.append(term)
     return out
+
+
+def load_dnt(data: bytes) -> list:
+    """Do-Not-Translate terms that must appear verbatim in the target."""
+    return _load_term_list(data, ("term", "dnt", "do not translate"))
+
+
+def load_forbidden(data: bytes) -> list:
+    """Forbidden target terms that must NOT appear in the translation (blacklist)."""
+    return _load_term_list(data, ("term", "forbidden", "blacklist"))
 
 
 if __name__ == "__main__":

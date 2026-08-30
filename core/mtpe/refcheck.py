@@ -70,8 +70,25 @@ def dnt_findings(segments, dnt):
     return out
 
 
-def run(segments, tm=None, tb=None, dnt=None):
-    return tm_findings(segments, tm) + tb_findings(segments, tb) + dnt_findings(segments, dnt)
+def forbidden_findings(segments, forbidden):
+    """Flag forbidden (blacklisted) terms that appear in the target (memoQ 3093/3097)."""
+    if not forbidden:
+        return []
+    out = []
+    for seg in segments:
+        if not seg.reviewable:
+            continue
+        low = seg.target.lower()
+        for term in forbidden:
+            if re.search(rf"(?<!\w){re.escape(term.lower())}(?!\w)", low):
+                out.append(_f(seg, "terminology", "forbidden_term", MAJOR,
+                              f"Forbidden term used in the target: '{term}'.", "forbidden"))
+    return out
+
+
+def run(segments, tm=None, tb=None, dnt=None, forbidden=None):
+    return (tm_findings(segments, tm) + tb_findings(segments, tb)
+            + dnt_findings(segments, dnt) + forbidden_findings(segments, forbidden))
 
 
 if __name__ == "__main__":

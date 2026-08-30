@@ -63,21 +63,44 @@ def check_segment(seg):
         out.append(_f(seg, "compliance", "punctuation", MINOR,
                       f"Source ends with '{src_end}' but target ends with '{tgt_end}'.", tgt.rstrip() + src_end))
 
+    # First-letter capitalization parity (memoQ 3030). Cased scripts only —
+    # for uncased scripts .isupper() is False on both sides, so no false flag.
+    sc = next((c for c in src if c.isalpha()), "")
+    tc = next((c for c in tgt if c.isalpha()), "")
+    if sc and tc and sc.isupper() != tc.isupper():
+        out.append(_f(seg, "compliance", "capitalization", MINOR,
+                      "First letter capitalization differs between source and target."))
+
+    # Bracket balance + count parity (memoQ 3086-3089). Brackets are universal;
+    # quotes are locale-specific and left to the LLM layer.
+    for open_ch, close_ch, name in (("(", ")", "()"), ("[", "]", "[]"), ("{", "}", "{}")):
+        t_open, t_close = tgt.count(open_ch), tgt.count(close_ch)
+        if t_open != t_close:
+            out.append(_f(seg, "compliance", "unbalanced_bracket", MAJOR,
+                          f"Unbalanced '{name}' in the target ({t_open} open, {t_close} close)."))
+        elif (src.count(open_ch) != t_open) or (src.count(close_ch) != t_close):
+            out.append(_f(seg, "compliance", "bracket_mismatch", MINOR,
+                          f"'{name}' count differs between source and target."))
+
     return out
 
 
 def check_inconsistency(segments):
-    """Same source translated differently across the file (deterministic)."""
+    """Inconsistent translations across the file (memoQ 3100 + 3101)."""
     by_source: dict = {}
+    by_target: dict = {}
     for s in segments:
         if s.source.strip() and s.target.strip():
             by_source.setdefault(s.source.strip().lower(), set()).add(s.target.strip())
+            by_target.setdefault(s.target.strip().lower(), set()).add(s.source.strip())
     out = []
     for s in segments:
-        variants = by_source.get(s.source.strip().lower())
-        if variants and len(variants) > 1:
+        if by_source.get(s.source.strip().lower(), set()).__len__() > 1:
             out.append(_f(s, "terminology", "inconsistency", MAJOR,
                           "Same source is translated inconsistently across segments."))
+        elif by_target.get(s.target.strip().lower(), set()).__len__() > 1:
+            out.append(_f(s, "terminology", "inconsistency_target", MINOR,
+                          "Same target is used for different sources across segments."))
     return out
 
 

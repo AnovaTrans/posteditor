@@ -2,13 +2,14 @@
 merged view. Both tools call this; they only differ in what they do with it.
 
 Layers:
-  * rules   — deterministic per-segment + inconsistency checks
-  * refcheck — TM divergence, termbase enforcement, DNT integrity
-  * llm     — full MTPE proofread (errors + a proposed corrected target)  [optional]
+  * rules      — deterministic per-segment + inconsistency checks
+  * refcheck   — TM divergence, termbase enforcement, DNT + forbidden terms
+  * llm        — full MTPE proofread (errors + a proposed corrected target)  [optional]
+  * spellcheck — LLM spelling/grammar pass in the target language              [optional]
 """
 from dataclasses import dataclass, field
 
-from core.mtpe import rules, refcheck, llm_analyze, scoring
+from core.mtpe import rules, refcheck, llm_analyze, spellcheck, scoring
 from core.mtpe.findings import Finding
 
 
@@ -16,7 +17,8 @@ from core.mtpe.findings import Finding
 class AnalyzeOptions:
     target_lang: str = ""
     instructions: str = ""
-    use_llm: bool = True
+    use_llm: bool = True           # full 6-layer MTPE proofread (post-editor / LQA)
+    use_spellcheck: bool = False   # focused spelling+grammar pass (QA)
     workers: int = 6
 
 
@@ -49,12 +51,12 @@ class AnalysisResult:
 
 
 def analyze(doc, options: AnalyzeOptions, *, llm=None, tm=None, tb=None, dnt=None,
-            progress=None) -> AnalysisResult:
+            forbidden=None, progress=None) -> AnalysisResult:
     segments = doc.segments
 
     findings: list[Finding] = []
     findings += rules.run(segments)
-    findings += refcheck.run(segments, tm=tm, tb=tb, dnt=dnt)
+    findings += refcheck.run(segments, tm=tm, tb=tb, dnt=dnt, forbidden=forbidden)
 
     llm_map: dict = {}
     if options.use_llm and llm is not None:
@@ -64,6 +66,11 @@ def analyze(doc, options: AnalyzeOptions, *, llm=None, tm=None, tb=None, dnt=Non
             workers=options.workers, progress=progress)
         for entry in llm_map.values():
             findings += entry["findings"]
+
+    if options.use_spellcheck and llm is not None:
+        protected = [s for s, _ in (tb.pairs if tb else [])] + list(dnt or [])
+        findings += spellcheck.check(segments, llm, protected_terms=protected,
+                                     workers=options.workers, progress=progress)
 
     # Merge into per-segment views (only reviewable segments carry findings).
     by_seg: dict = {}
