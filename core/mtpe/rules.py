@@ -13,8 +13,15 @@ from core.mtpe.findings import Finding, CRITICAL, MAJOR, MINOR
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
 _PLACEHOLDER = re.compile(r"%[sd]|%\d+\$[sd]|\{[^{}]*\}|\$\{[^}]*\}")
 _TAG = re.compile(r"<[^>]+>|\{\d+\}|\[[a-z]+\]")
+_TAGMARK = re.compile(r"\[[a-z]+\]")     # placeholder markers the parser renders, e.g. [ph] [x]
 _WORD = re.compile(r"[^\W\d_]+", re.UNICODE)
 _HAS_LETTER = re.compile(r"[^\W\d_]", re.UNICODE)
+
+
+def _prose(text: str) -> str:
+    """Text with placeholder markers removed — the real, translatable words only.
+    Keeps letter-based checks from tripping on synthetic tag renders like [ph]."""
+    return _TAGMARK.sub(" ", text or "")
 
 
 def _f(seg, layer, cat, sev, msg, suggestion=""):
@@ -28,7 +35,8 @@ def check_segment(seg):
     if not tgt.strip():
         return [_f(seg, "accuracy", "empty_target", CRITICAL, "Target is empty.")]
 
-    if src.strip() and tgt.strip() == src.strip() and _HAS_LETTER.search(src):
+    src_prose, tgt_prose = _prose(src), _prose(tgt)
+    if src_prose.strip() and tgt_prose.strip() == src_prose.strip() and _HAS_LETTER.search(src_prose):
         out.append(_f(seg, "accuracy", "untranslated", MAJOR, "Target is identical to the source (untranslated)."))
 
     if sorted(_NUMBER.findall(src)) != sorted(_NUMBER.findall(tgt)):
@@ -65,8 +73,9 @@ def check_segment(seg):
 
     # First-letter capitalization parity (memoQ 3030). Cased scripts only —
     # for uncased scripts .isupper() is False on both sides, so no false flag.
-    sc = next((c for c in src if c.isalpha()), "")
-    tc = next((c for c in tgt if c.isalpha()), "")
+    # Use prose so a leading [ph] tag doesn't supply the "first letter".
+    sc = next((c for c in src_prose if c.isalpha()), "")
+    tc = next((c for c in tgt_prose if c.isalpha()), "")
     if sc and tc and sc.isupper() != tc.isupper():
         out.append(_f(seg, "compliance", "capitalization", MINOR,
                       "First letter capitalization differs between source and target."))

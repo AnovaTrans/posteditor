@@ -41,6 +41,20 @@ def test_dnt_and_tb_and_score():
     assert sc["penalty"] > 0 and sc["grade"] in ("Excellent", "Good", "Fair", "Poor", "Bad")
 
 
+def test_tag_only_segment_not_flagged_untranslated():
+    """A segment that is only an inline tag must not be flagged untranslated or
+    miscapitalized (regression: [ph] renders contain letters)."""
+    xliff = b"""<?xml version="1.0"?><xliff version="1.2">
+    <file source-language="en" target-language="tr"><body>
+    <trans-unit id="1"><source><ph id="1">x</ph></source><target><ph id="1">x</ph></target></trans-unit>
+    <trans-unit id="2"><source>Select <ph id="1">a</ph>.</source><target><ph id="1">a</ph> secin.</target></trans-unit>
+    </body></file></xliff>"""
+    doc = parse.load(xliff, "t.xliff")
+    res = analyze(doc, AnalyzeOptions(use_llm=False))
+    cats = [(f.segment_id, f.category) for f in res.findings]
+    assert ("1", "untranslated") not in cats, cats     # tag-only, nothing to translate
+
+
 def test_apply_preserves_tm_reference():
     doc = _load()
     doc.set_target(doc.segments[0], "24 saat vardir.")
