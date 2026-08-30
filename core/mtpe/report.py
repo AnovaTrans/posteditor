@@ -24,8 +24,8 @@ def report_json(stats: dict, score: dict, findings) -> bytes:
     return json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
 
 
-def report_md(stats: dict, score: dict, findings) -> bytes:
-    L = [f"# LQA Report — {stats.get('file_name', '')}", ""]
+def report_md(stats: dict, score: dict, findings, title: str = "LQA Report") -> bytes:
+    L = [f"# {title} — {stats.get('file_name', '')}", ""]
     L += [
         "## Summary", "",
         "| Metric | Value |", "|---|---|",
